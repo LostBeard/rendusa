@@ -1,0 +1,9 @@
+package = Rendusa
+name = Rendusa
+description = Media Manager for 2D/3D images and videos.
+core = 7.x
+
+dependencies[] = jquery_update
+
+
+

@@ -1,0 +1,1077 @@
+<?php
+
+// .htaccess to allow using resources from other domains
+// # ----------------------------------------------------------------------
+// # Allow loading of other domains/schemasmedia from 
+// # ----------------------------------------------------------------------
+// <FilesMatch "\.(jpg|jpeg|png|mp4)$">
+//     <IfModule mod_headers.c>
+//         SetEnvIf Origin "http(s)?://(www\.)?(3dgmdev.com|3dgamemarket.com)$" AccessControlAllowOrigin=$0
+//         Header add Access-Control-Allow-Origin %{AccessControlAllowOrigin}e env=AccessControlAllowOrigin
+//     </IfModule>
+// </FilesMatch>
+
+error_reporting(E_ALL);
+
+function rendusa__get_now($intime = -1, $formatting = "Y-m-d_H-i-s"){
+	if ($intime == -1) $intime = time();
+	if ($intime == 0) return '';
+	return gmdate($formatting, $intime);
+}
+
+function rendusa__ajax__stamp(){
+	return gmdate("U",time());
+}
+
+function rendusa__get_now_stamp(){
+	return gmdate("U",time());
+}
+
+function rendusa__get_now_ticks(){
+	return round(microtime(true) * 1000);
+}
+
+function rendusa__ddiff($start,$end=''){
+	if ($end == ''){
+		$end = rendusa__get_now();
+	}
+	$istart  = strtotime($start);
+	$iend    = strtotime($end);
+	return $iend - $istart;
+}
+
+function rendusa__media_get_record($media_id){
+	try {
+		$params = array('media_id' => $media_id);
+		$q = db_query('SELECT * FROM rendusa_media WHERE media_id = :media_id', $params);
+		if ($q->rowCount() > 0) return $q->fetchAll()[0];
+	} catch(Excetpion $e){ }
+	return null;
+}
+function rendusa__media_get_frame($media_id, $width = 0, $pos = 0, $lossless = true, $format3D = '', $allow_create = true){
+	$ret = null;
+	$m = null;
+	if (is_object($media_id)){
+		$m = $media_id;
+		$media_id = intval($m->media_id);
+	} else {
+		$media_id = intval($media_id);
+	}
+	// $lossless = true - png will be used, otherwise jpeg is used
+	// the frame will actually be lossy if the $width doesn't = source width
+	if (!($wrapper = file_stream_wrapper_get_instance_by_uri('public://'))) return $ret;
+	$public_path = $wrapper->realpath();
+	$public_uri = $wrapper->getExternalUrl();
+	$pos = floatval($pos);
+	$mime = $lossless ? 'image/png' : 'image/jpeg';
+	$ext = $lossless ? 'png' : 'jpg';
+	$width = intval($width);
+	$m = null;
+	if ($width == 0 || $format3D == '') {
+		$m = rendusa__media_get_record($media_id);
+		if (!$m) return $ret;
+		if ($width == 0) $width = $m->width;
+		if ($format3D == '') $format3D = $m->format3D;
+	}
+	$params = array(
+		'media_id' => $media_id,
+		'position' => $pos,
+		'mime' => $mime,
+		'width' => $width,
+	);
+	$sql = 'SELECT * FROM rendusa_media_frames WHERE media_id = :media_id AND width = :width AND mime = :mime AND position = :position';
+	if (is_string($format3D) && $format3D != ''){
+		$sql .= ' AND format3D = :format3D';
+		$params['format3D'] = $format3D;
+	}
+	$q = db_query($sql, $params);
+	if ($q->rowCount() > 0) return $q->fetchAll()[0];
+	if (!$allow_create) return $ret;
+	// create
+	if (!$m) $m = rendusa__media_get_record($media_id);
+	// create using $m
+	$src = str_replace('public://', $public_path . '/', $m->url);
+	$src_pathinfo = pathinfo($src);
+	//$src_subpath = str_replace('public://', '', $m->url);
+	//$sub_path = 'users/media/';
+	$dest_dir = $src_pathinfo['dirname'];
+	$ticks = rendusa__get_now_ticks();
+	$fname = $src_pathinfo['filename'] . '-' . $ticks . '.' . $ext;
+	$dest = $dest_dir . '/' . $fname;
+	if (file_exists($dest)) return $ret;
+	$mediaurl = str_replace($public_path . '/', 'public://', $dest);
+	if ($width === 0 || $width > intval($m->width)) $width = intval($m->width);
+	$create_success = false;
+	$tmp_file = false;
+	$return_val = false;
+	$output = array();
+	if (strpos($m->mime, 'video/') === 0){
+		if ($m->format3D == $format3D){
+			// format not changing. extract to dest here
+			try {
+				exec('ffmpeg -y -v quiet -ss ' . $pos . ' -i "' . $src . '" -vf scale=' . $width . ':-1 -vframes 1 -f image2 "' . $dest . '"', $output, $return_val);
+				if (!file_exists($dest) || $return_val != 0){
+					return $ret;
+				}
+			} catch(Exception $e){
+				// fatal error 
+				return $ret;
+			}
+		} else {
+			// extract lossless, full resolution frame using ffmpeg to tmp_file to use as source
+			$tmp_file = rendusa__temp_file_name('.png');
+			try {
+				exec('ffmpeg -y -v quiet -ss ' . $pos . ' -i "' . $src . '" -vframes 1 -f image2 "' . $tmp_file . '"', $output, $return_val);
+				if (!file_exists($tmp_file) || $return_val != 0){
+					return $ret;
+				}
+				$src = $tmp_file;
+			} catch(Exception $e){
+				// fatal error 
+				return $ret;
+			}
+		}
+	}
+	if (strpos($m->mime, 'image/') === 0) $pos = floatval(0);
+	if (file_exists($dest) || rendusa__image_copy($src, $dest, $width, $m->format3D, $format3D)){
+		$size = getimagesize($dest);
+		$width = $size[0];
+		$height = $size[1];
+		$create_success = true;
+		try {
+			$frame_id = db_insert('rendusa_media_frames')->fields(
+				array(
+					'media_id' => $media_id,
+					'url' => $mediaurl,
+					'format3D' => $format3D,
+					'mime' => $mime,
+					'width' => $width,
+					'height' => $height,
+					'size' => filesize($dest),
+					'position' => $pos,
+				)
+			)->execute();
+		} catch(Exception $e) {
+			$create_success = false;
+			unlink($dest);
+		}
+	}
+	if ($tmp_file !== false && file_exists($tmp_file)) unlink($tmp_file);
+	// try loading again but without allow create so we don't loop
+	if (!$create_success) return $ret;
+	return rendusa__media_get_frame($m, $width, $pos, $lossless, $format3D, false);
+}
+function rendusa__image_copy($src, $dest, $desired_width = 0, $format3DSrc = '', $format3DDest = ''){
+	$ret = false;
+	if (!file_exists($src)) return $ret;
+	if (!file_exists($dest)){
+		// create thumb
+		$desired_height = 0; // will be set below using correct aspect ratio based on width
+		try {
+			/* read the source image */
+			$source_image = false;
+			if (strrpos(strtolower($src), '.png') === strlen($src) - 4){
+				$source_image = @imagecreatefrompng($src);
+			} else if (strrpos(strtolower($src), '.bmp') === strlen($src) - 4){
+				$source_image = @imagecreatefrombmp($src);
+			} else if (strrpos(strtolower($src), '.jpg') === strlen($src) - 4 || strrpos(strtolower($src), '.jpeg') === strlen($src) - 5){
+				$source_image = @imagecreatefromjpeg($src);
+			}
+			if ($source_image){
+				$width = imagesx($source_image);
+				$height = imagesy($source_image);
+				/* find the "desired height" of this thumbnail, relative to the desired width  */
+				$desired_height = floor($height * ($desired_width / $width));
+				/* create a new, "virtual" image */
+				$virtual_image = imagecreatetruecolor($desired_width, $desired_height);
+				/* copy source image at a resized size */
+				$formats_ok = false;
+				if ($format3DSrc == $format3DDest) {
+					// no format3D change
+					imagecopyresampled($virtual_image, $source_image, 0, 0, 0, 0, $desired_width, $desired_height, $width, $height);
+					$formats_ok = true;
+				} else if ($format3DSrc == '2DZ'){
+					if ($format3DDest == '2D') {
+						imagecopyresampled($virtual_image, $source_image, 0, 0, 0, 0, $desired_width, $desired_height, $width / 2, $height);
+						$formats_ok = true;
+					}
+				}
+				if (!$formats_ok) return $ret;
+				if (strrpos(strtolower($dest), '.png') === strlen($dest) - 4){
+					imagepng($virtual_image, $dest, 9);
+				} else if (strrpos(strtolower($dest), '.jpg') === strlen($dest) - 4 || strrpos(strtolower($src), '.jpeg') === strlen($src) - 5){
+					imagejpeg($virtual_image, $dest, 90);
+				}
+				/* create the physical thumbnail image to its destination */
+				
+			}
+		} catch(Exception $e) { }		
+		$ret = file_exists($dest);
+	}
+	return $ret;
+}
+function rendusa__temp_file_name($ext = ''){
+	$filename = '';
+	while (true) {
+		$filename = uniqid('rendusa', true) . $ext;
+		if (!file_exists(sys_get_temp_dir() . $filename)) break;
+	}
+	return $filename;
+}
+
+function rendusa__media_upload_page_build(){
+	$html = '';
+	global $user;
+	if ($user->uid == 0) {
+		$html = '<div>You must be logged in to use this feature.</div>';
+		return $html;	
+	}
+	global $rendusa_formats_3d;
+	$rendusapath = '/sites/all/modules/rendusa/lib/';
+	$js = "window.rendusa_formats_3d = " . json_encode($rendusa_formats_3d) . ";";
+	drupal_add_js($js, 'inline');
+	$html .= rendusa__resources();
+	$html .= '<div id="rendusa_upload_container"></div>'; 
+	$html .= '<script src="' . $rendusapath . 'spark-md5.min.js"></script>';
+	$html .= '<script src="' . $rendusapath . 'RendusaUploader.js"></script>';
+	$html .= '<link rel="stylesheet" type="text/css" href="' . $rendusapath . 'RendusaUploader.css">';
+	return $html;
+}
+
+
+
+function rendusa__real_path_to_url($realpath){
+	$ret = '';
+	$droot = DRUPAL_ROOT;	// /var/www/html
+	if (strpos($realpath, $droot) !== 0) return $ret;
+	$ret = substr($realpath, strlen($droot));
+	//global $base_url;
+	//$ret = $base_url . $ret;
+	return $ret;
+}
+function rendusa__send_ajax_result($data){
+	echo(json_encode($data));
+	exit;
+}
+
+function rendusa_enable(){
+	rendusa__init_db();
+}
+
+function rendusa__init_db(){
+	if(!db_table_exists('rendusa_media')) {
+		db_create_table('rendusa_media', array(
+			'fields' => array(
+				'media_id' => array('type' => 'serial', 'size' => 'big', 'not null' => true),	// auto-increment
+				'uid' => array('type' => 'int'),							// drupal $user->uid of uploader
+				'url' => array('type' => 'text'),							// media uri
+				'format3D' => array('type' => 'text'),						// 3d format of the media 
+				'mime' => array('type' => 'varchar', 'length' => 32),		// media mime type
+				'width' => array('type' => 'int'),							// media width
+				'height' => array('type' => 'int'),							// media height
+				'filename' => array('type' => 'text'),						// original filename without path info
+				'size' => array('type' => 'int', 'size' => 'big'),			// file size on disk
+				'upload_when' => array('type' => 'int', 'size' => 'big'),	// when it was uploaded
+				'hash' => array('type' => 'varchar', 'length' => 48),		// file hash as reported by the client (to prevent duplicate uploads)
+				'private' => array('type' => 'int'),						// if not shared with other users
+				'disabled' => array('type' => 'int'),						// if disabled (reported and found to be in violation of site rules)
+				'tags' => array('type' => 'text'),							// comma delimited string of tags
+				'duration' => array('type' => 'float')					// media duration. (only set for video)
+			),
+			'unique keys' => array('hash' => array('hash')),
+			'primary key' => array('media_id')
+		));
+	}
+	// media steam ids
+	if(!db_table_exists('rendusa_media_steam_ids')) {
+		db_create_table('rendusa_media_steam_ids', array(
+			'fields' => array(
+				'media_id' => array('type' => 'int', 'size' => 'big', 'not null' => true),
+				'appid' => array('type' => 'int', 'size' => 'big', 'not null' => true),
+			),
+			'primary key' => array('media_id')
+		));
+	}
+	// table of cached steam appids
+	if(!db_table_exists('rendusa_steam_ids')) {
+		db_create_table('rendusa_steam_ids', array(
+			'fields' => array(
+				'appid' => array('type' => 'int', 'size' => 'big', 'not null' => true),
+				'name' => array('type' => 'text', 'not null' => true),
+				'updated' => array('type' => 'int', 'size' => 'big', 'not null' => true),
+			),
+			'primary key' => array('appid')
+		));
+		// update table
+		rendusa__update_steam_ids();
+	}
+	if(!db_table_exists('rendusa_media_frames')) {
+		db_create_table('rendusa_media_frames', array(
+			'fields' => array(
+				'frame_id' => array('type' => 'serial', 'size' => 'big', 'not null' => true),	// auto-increment
+				'media_id' => array('type' => 'int', 'size' => 'big', 'not null' => true),
+				'url' => array('type' => 'text'),						// 3d format of the media 
+				'format3D' => array('type' => 'text'),						// 3d format of the media 
+				'mime' => array('type' => 'varchar', 'length' => 32),		// media mime type
+				'width' => array('type' => 'int'),							// media width
+				'height' => array('type' => 'int'),							// media height
+				'size' => array('type' => 'int', 'size' => 'big'),			// file size on disk
+				'position' => array('type' => 'float', 'default' => '0')	// frame position. 0 for images
+			),
+			'primary key' => array('frame_id')
+		));
+	}
+}
+function rendusa__orphan_check($delete = false){
+	// TODO
+	// check for database entries that have missing files and vice versa
+	// if ($delete) delete orphan entries/files
+	// return list
+}
+
+function rendusa__media_info_get_from_hash($hash){
+	$ret = false;
+	if (empty($hash) || !is_string($hash)) return $ret;
+	$params = array(':hash' => $hash);
+	$sql = 'SELECT * FROM rendusa_media WHERE hash = :hash';
+	$q = db_query($sql, $params);
+	if ($q->rowCount() > 0) $ret = $q->fetchAll()[0];
+	return $ret;
+}
+
+function rendusa__media_upload_page() {
+	rendusa__init_db();
+	if (empty($_POST) || empty($_POST['cmd']) || !is_string($_POST['cmd']))	return rendusa__media_upload_page_build();
+	$cmd = $_POST['cmd'];
+
+	if ($cmd === 'existscheck'){
+		if (!empty($_POST['mediahash']) && is_string($_POST['mediahash'])){
+			$ret = array(
+				'exists' => false,
+				'url' => '',
+				'page_url' => '',		// the url
+				'hash' => '',
+				'format3D' => '',
+			);
+			$ret['hash'] = $_POST['mediahash'];
+			$media = rendusa__media_info_get_from_hash($ret['hash']);
+			if ($media){ 
+				$ret['url'] = $media->url;
+				$ret['page_url'] = '';			// TODO - page url of this media item
+				$ret['exists'] = true;
+				$ret['format3D'] = $media->format3D;
+			}
+			rendusa__send_ajax_result($ret);
+			return;
+		}
+	}
+	
+	$ret = array(
+		'success' => false,
+		'url' => '',
+		'error' => ''
+	);
+	global $user;
+	if ($user->uid == 0) {
+		rendusa__send_ajax_result($ret);
+		return;
+	}
+	global $rendusa_formats_3d;
+	$dest_dir = '';
+	$public_path = '';
+	$debugi = '';
+	$mediainfo = false;
+	if (!($wrapper = file_stream_wrapper_get_instance_by_uri('public://'))) {
+		return;
+	}
+	$public_path = $wrapper->realpath();
+	$public_uri = $wrapper->getExternalUrl();
+	//$app = false;
+	$format_3d = !empty($_POST['format_3d']) && in_array($_POST['format_3d'], $rendusa_formats_3d)? $_POST['format_3d'] : '';
+	$mediahash = !empty($_POST['mediahash']) ? $_POST['mediahash'] : '';
+	if (!preg_match('/^[a-f0-9]{32}-[0-9]{1,10}$/', $mediahash)){
+		rendusa__send_ajax_result($ret);
+		return;	// not needed but makes easier to read the code
+	}
+	if (empty($public_path)){
+		$ret['error'] = 'Invalid $public_path';
+		rendusa__send_ajax_result($ret);
+		return;
+	}
+	//$debugi = json_encode($_POST) . '<br/>' . json_encode($app);
+	if (!empty($format_3d) && !empty($_FILES) && !empty($_FILES['mediafile']) && $_FILES['mediafile']['size'] > 0) {
+		$pinfo = pathinfo($_FILES['mediafile']['name']);
+		$sub_path = 'users/media/';
+		$dest_dir = $public_path . '/' . $sub_path;
+		$ticks = rendusa__get_now_ticks();
+		$ext = strtolower($pinfo['extension']);
+		$fname = $user->uid . '-' . $ticks . '.' . $ext;
+		$mediaurl = 'public://' . $sub_path . $fname;
+		if (!is_dir($dest_dir)) mkdir($dest_dir, 0775, true);
+		$is_video = strpos($_FILES['mediafile']['type'], 'video/') === 0;
+		$is_image = strpos($_FILES['mediafile']['type'], 'image/') === 0;
+		$tmp_name = $_FILES['mediafile']['tmp_name'];
+		$dest = $dest_dir . $fname;
+		//
+		$mediainfo = array(
+			'uid' => $user->uid,
+			'url' => $mediaurl,
+			'format3D' => $format_3d,
+			//'thumb' => '',
+			//'thumb_url' => '',
+			'mime' => $_FILES['mediafile']['type'],
+			'width' => 0,
+			'height' => 0,
+			//'filename_orig' => $_FILES['mediafile']['name'],
+			'filename' => $_FILES['mediafile']['name'], //$dest,
+			'size' => $_FILES['mediafile']['size'],
+			'upload_when' => REQUEST_TIME,
+			//'extension' => $ext,
+			'hash' => $mediahash,
+			'private' => 0,
+			'disabled' => 0,
+			'tags' => '',
+			'duration' => 0,
+		);
+		// validate media
+		$valid = false;
+		if ($is_video){
+			// use ffprobe to try and get additional media info
+			$ffprobe_info = rendusa__ffprobe_info_get($tmp_name);
+			// duration, format_name, format_long_name, 
+			$duration = false;
+			if (isset($ffprobe_info->format->duration)){
+				// use ffprobe value
+				$duration = $ffprobe_info->format->duration;
+			} else {
+				// use submitted data (will be checked for validity)
+				$duration = $_POST['duration'];
+			}
+			if (is_string($duration)){
+				$duration = trim($duration, "0");
+				if (!preg_match('/^[1-9][0-9]{,4}(?:\.[0-9]{,16})?$/', $duration)){
+					$mediainfo['duration'] = $duration;
+					$tmp_name_frame = $tmp_name . '.frame.jpg';
+					try {
+						$rr = shell_exec('ffmpeg -y -v quiet -ss 0 -i "' . $tmp_name . '" -vframes 1 -f image2 "' . $tmp_name_frame . '"');
+						$size = getimagesize($tmp_name_frame);
+						if ($size !== false){
+							$mediainfo['width'] = $size[0];
+							$mediainfo['height'] = $size[1];
+							$valid = true;
+						}
+						unlink($tmp_name_frame);
+					} catch(Exception $e) {
+						$ret['error'] = $e->getMessage();
+					}
+				}
+			} else {
+				if ($ret['error'] == '') $ret['error'] = 'Video duration problem';
+			}
+		} else if ($is_image) {
+			// validate image size
+			$size = getimagesize($tmp_name);
+			if ($size !== false){
+				$mediainfo['width'] = $size[0];
+				$mediainfo['height'] = $size[1];
+				$valid = true;
+			} else {
+
+			}
+		}
+		// media_id
+		if ($valid){
+			// upload appears valid. save it to web path, save media info, and create thumbs, etc...
+			$ret['success'] = move_uploaded_file($tmp_name, $dest);
+			if ($ret['success']) {
+				// create thumbnails and extract a frame from video
+				try {
+					$media_id = db_insert('rendusa_media')->fields($mediainfo)->execute();
+				} catch(Exception $e) {
+					$ret['success'] = false;
+					if ($ret['error'] == '') $ret['error'] = $e->getMessage();
+				}
+				// create 
+				if ($ret['success']){
+					if ($is_video){
+						// fullsize frame, lossless, same format3D
+						rendusa__media_get_frame($media_id, 0, 0, true);
+						// // fullsize frame, lossless, 2D
+						// rendusa__media_get_frame($media_id, 0, 0, true, '2D');
+						// // fullsize frame, lossy, same format3D
+						// rendusa__media_get_frame($media_id, 0, 0, false);
+						
+					} else if ($is_image){
+						
+
+					}
+					// // fullsize frame, lossy, same format3D
+					// rendusa__media_get_frame($media_id, 0, 0, false);
+					// // fullsize frame, lossy, 2D
+					// rendusa__media_get_frame($media_id, 0, 0, false, '2D');
+					// // medium thumb, lossy, same format3D
+					// rendusa__media_get_frame($media_id, 480, 0, false);
+					// medium thumb, lossy, 2D
+					rendusa__media_get_frame($media_id, 480, 0, false, '2D');
+					// tag with meta data that may be available
+					rendusa__update_media_steam_ids($media_id);
+				} else {
+					try {
+						unlink($dest);
+					}  catch(Exception $e) { }
+				}
+			} else {
+				if ($ret['error'] == '') $ret['error'] = 'Could not move uploaded file. Check your server settings and permissions.';
+			}
+		} else {
+			// invalid upload. delete
+			unlink($tmp_name);
+			if ($ret['error'] == '') $ret['error'] = 'Invalid media';
+		}
+	} else {
+		// missing some $_POST data
+		if ($ret['error'] == '') $ret['error'] = $_POST;
+	}
+	// TODO add error message if file size exceeded upload limits
+	// send upload response
+	if ($ret['success']) {
+		clearstatcache();
+	} else {
+		if ($ret['error'] == '') $ret['error'] = 'Unknown error';
+	}
+	rendusa__send_ajax_result($ret);
+}
+function rendusa__media_get_info($media_id){
+	// TODO
+	// load media info using base name (id)
+	$mediainfo = null;
+
+
+	return $mediainfo;
+}
+function rendusa__media_video_add_frame(&$mediainfo, $pos = 0){
+	$realpath = '';
+	if ($wrapper = file_stream_wrapper_get_instance_by_uri('public://')) $realpath = $wrapper->realpath();
+	$sub_path = '/users/media/';
+	$media_dir = $realpath . $sub_path;
+	$filename = $mediainfo['filename'];
+	$media_file = $media_dir . $filename;
+	// extract frame
+	$frame = rendusa__video_frame_get($media_file, $pos);
+	if ($frame == '' || !file_exists($frame)) return;
+	$frame_url = rendusa__real_path_to_url($frame);
+	// add a thumb for the frame 
+	$thumb = rendusa__image_thumb_get($frame);
+	if ($thumb == '' || !file_exists($thumb)) return;
+	$thumb_url = rendusa__real_path_to_url($thumb);
+	$only_Frame = count(array_keys($mediainfo['frames'])) == 0;
+	$mediainfo['frames']['f' . $pos] = array(
+		'i' => $pos,
+		'url' => $frame_url, 
+		'thumb' => $thumb_url,
+	);
+	if ($only_Frame || empty($mediainfo['thumb']) || empty($mediainfo['frame'])){
+		$mediainfo['frame'] = $frame_url;
+		$mediainfo['thumb'] = $thumb_url;
+	}
+	if ($mediainfo['width'] == 0 || $mediainfo['height'] == 0){
+		$size = getimagesize($frame);
+		$mediainfo['width'] = $size[0];
+		$mediainfo['height'] = $size[1];
+	}
+}
+function rendusa__media_image_add_thumb(&$mediainfo){
+	$realpath = '';
+	if ($wrapper = file_stream_wrapper_get_instance_by_uri('public://')) $realpath = $wrapper->realpath();
+	$sub_path = '/users/media/';
+	$media_dir = $realpath . $sub_path;
+	$filename = $mediainfo['filename'];
+	$media_file = $media_dir . $filename;
+	$thumb = rendusa__image_thumb_get($media_file);
+	if ($thumb == '' || !file_exists($thumb)) return;
+	$thumb_url = rendusa__real_path_to_url($thumb);
+	$mediainfo['thumb'] = $thumb_url;
+}
+function rendusa__medai_list_test(){
+	$testmediapath = '/sites/all/modules/rendusa';
+	$ret = array(
+		array(
+			'url' => $testmediapath . '/test/media/sbs_stereograph-lg.jpg',
+		),
+		array(
+			'url' => $testmediapath . '/test/media/2dzforest1.png',
+			'format3D' => '2DZ',
+		),
+		array(
+			'url' => $testmediapath . '/test/media/fallout.mp4',
+			'format3D' => '2DZ',
+		),
+		array(
+			'url' => $testmediapath . '/test/media/TheForest_1.mp4',
+			'format3D' => '2DZ',
+		),
+	);
+	return $ret;
+}
+
+
+function rendusa__startsWith($haystack, $needle){
+    return !strncmp($haystack, $needle, strlen($needle));
+}
+
+function rendusa__endsWith($haystack, $needle){
+    $length = strlen($needle);
+    if ($length == 0) {
+        return true;
+    }
+    return (substr($haystack, -$length) === $needle);
+}
+
+// dynamicly set sliders at top of site to last 4 2D+Z media uploads if available
+function rendusa_file_load($files){
+	if (isset($files['134'])
+	|| isset($files['478'])
+	|| isset($files['479'])
+	|| isset($files['481'])) {
+		rendusa__init_db();
+		$params = array('format3D' => '2D', 'mime' => 'image/jpeg');
+		$sql = 'SELECT * FROM rendusa_media ORDER BY media_id DESC LIMIT 20';
+		try {
+			$q = db_query($sql, $params);
+			$cnt = $q->rowCount();
+			if ($cnt > 0) {
+				$done = 0;
+				$ids = array('134', '478', '479', '481');
+				$rows = $q->fetchAll();
+				shuffle($rows);
+				for($i = 0; $i < $cnt;$i++){
+					$m = $rows[$i];
+					if ($f = rendusa__media_get_frame($m->media_id, 960, 0, false, '2D')){
+						$id = $ids[$done];
+						if (isset($files[$id])){
+							$files[$id]->uri = $f->url;
+							$files[$id]->filemime = $f->mime;
+							$files[$id]->filename = $m->filename;
+							$files[$id]->filesize = $f->size;
+						}
+						$done++;
+						if ($done == 4) break;
+					}
+				}
+			}
+		} catch(Exception $e){ }
+	} 
+}
+function rendusa__update_media_steam_ids($media_id = 0){
+	// check all existing media to see if it has auto detectable steam id and id it in our table
+	$sql = 'SELECT media_id, filename FROM rendusa_media';
+	$params = array();
+	if ($media_id !== 0){
+		$params[':media_id'] = $media_id;
+		$sql .= ' WHERE media_id = :media_id';
+	}
+	try {
+		$q = db_query($sql, $params);
+		$cnt = $q->rowCount();
+		if ($cnt > 0){
+			$rows = $q->fetchAll();
+			$appids = rendusa__get_steam_ids();
+			for($i = 0; $i < $cnt; $i++){
+				$r = $rows[$i];
+				$filename = $r->filename;
+				$media_id = $r->media_id;
+				// Example
+				// 207610_20170216193142_1.png
+				// ^appid_YYYYMMDDHHmmSS_index
+				if (preg_match('/^([0-9]{1,10})_(2[0-9]{3})([0-9]{2})([0-9]{2})([0-9]{2})([0-9]{2})([0-9]{2})_([0-9]{1,2})\.(png|jpg)$/i', $filename, $m)){
+					$file_appid = $m[1];
+					if (isset($appids['appid_' . $file_appid])){
+						$a = $appids['appid_' . $file_appid];
+						$appid = $a->appid;
+						$q = db_query('REPLACE INTO rendusa_media_steam_ids (media_id, appid) VALUES (:media_id, :appid)', array(':media_id' => $media_id, ':appid' => $a->appid));
+					}
+				}
+			}
+		}
+	} catch(Exception $e) {
+		$r = '';
+	}
+}
+function rendusa__get_steam_ids(){
+	$ret = array();
+	try {
+		$q = db_query('SELECT appid, name FROM rendusa_steam_ids');
+		if ($q->rowCount() > 0) {
+			$rows = $q->fetchAll();
+			for($i = 0; $i < count($rows); $i++){
+				$r = $rows[$i];
+				$ret['appid_' . $r->appid] = $r;
+			}
+		}
+	} catch(Exception $e) { }
+	return $ret;
+}
+
+function rendusa__update_steam_ids(){
+	$ret = array();
+	$updated = 0;
+	try {
+		$q = db_query('SELECT updated FROM rendusa_steam_ids ORDER BY updated DESC LIMIT 1');
+		if ($q->rowCount() > 0) $updated = $q->fetchAll()[0]->updated;
+	} catch(Exception $e) { }
+	$now = rendusa__get_now_ticks();
+	$refresh_rate = 86400000; // how often to recheck appids from steam in ms. currently once per day
+	if ($now - $updated > $refresh_rate){
+		// refresh
+		try {
+			$json = file_get_contents('http://api.steampowered.com/ISteamApps/GetAppList/v0002/');
+			$appids = json_decode($json, true)['applist']['apps'];
+			for($i = 0; $i < count($appids); $i++){
+				$ai = $appids[$i];
+				try{
+					$q = db_query('REPLACE INTO rendusa_steam_ids (appid, name, updated) VALUES (:appid, :name, :updated)', array(':appid' => $ai['appid'], ':name' => $ai['name'], ':updated' => $now));
+				} catch(Exception $e) {
+					$r = '';
+				}
+			}
+			$updated = $now;
+			rendusa__update_media_steam_ids();
+		} catch(Exception $e) {
+			$r = '';
+		}
+	}
+	return $ret;
+}
+
+function rendusa__media_list(){
+	$ret = [];
+	// TODO - only send info needed by client
+	if (!($wrapper = file_stream_wrapper_get_instance_by_uri('public://'))) {
+		return;
+	}
+	$public_path = $wrapper->realpath();
+	$public_uri = $wrapper->getExternalUrl();
+	$public_uri = substr($public_uri, strpos($public_uri, '/', 10));
+	$params = array(':public' => 'public://', ':public_uri' => $public_uri, ':mime' => 'image/jpeg', ':format3D' => '2D', 'width' => '480');
+	// SELECT m.*, s.name as steam_name, s.appid as steam_appid FROM rendusa_media m LEFT JOIN rendusa_media_steam_ids i ON m.media_id = i.media_id LEFT JOIN rendusa_steam_ids s ON s.appid = i.appid
+
+	$sql = 'SELECT m.media_id, m.uid, u.name AS shared_by, Replace(f.url, :public, :public_uri) AS thumb_url, f.size AS thumb_size, Replace(m.url, :public, :public_uri) AS url, m.format3D, m.mime, m.width, m.height, filename, m.size, upload_when, hash, private, disabled, tags, duration, s.name as steam_name, s.appid as steam_appid  FROM rendusa_media m LEFT JOIN rendusa_media_steam_ids i ON m.media_id = i.media_id LEFT JOIN rendusa_steam_ids s ON s.appid = i.appid INNER JOIN users u ON u.uid = m.uid INNER JOIN rendusa_media_frames f ON f.media_id = m.media_id WHERE f.mime = :mime AND f.format3D = :format3D AND f.width = :width ORDER BY m.media_id DESC';
+	//$sql = 'SELECT * FROM rendusa_media WHERE private = 0 AND disabled = 0';
+	try {
+		$q = db_query($sql, $params);
+		if ($q->rowCount() > 0) {
+			$ret = $q->fetchAll();
+		}
+		if (count($ret) === 0) $ret = rendusa__medai_list_test();
+	} catch(Exception $e){
+		$r = '';
+	}
+	return $ret;
+}
+
+
+// TODO
+// below function will show a specific media (image or video). if owner, allow editing of metadata
+function rendusa__media_page(){
+	global $user;
+	$media = rendusa__media_list();
+	drupal_add_js('console.log("rendusa_media_all_page: '.count($media).'")', 'inline');
+	shuffle($media);
+	if (count($media) > 20)
+	{
+		$media = array_slice($media, 0, 20);
+	}
+	drupal_add_js('console.log("rendusa_media_all_page: '.count($media).'")', 'inline');
+	drupal_add_js('console.log("media", '.json_encode($media).')', 'inline');
+	$js  = 'jQuery(document).ready(function(){';
+	$js .= "	window.rendusa = new THREE.Rendusa({ target: '#app_media', sources: " . json_encode($media) . " });";
+	$js .= '});';
+	drupal_add_js($js, 'inline');
+	// load Rendusa
+	$html = '<div class="" id="app_media" style="width: 938px; height: 528px; border: 1px solid black;"></div>';
+	$html .= rendusa__resources();
+	return $html;
+}
+
+// add ability to get new source list on playlist end. allowing random access to all media
+function rendusa__media_all_page(){
+	global $user;
+	$media = rendusa__media_list();
+	drupal_add_js('console.log("rendusa_media_all_page: '.count($media).'")', 'inline');
+	shuffle($media);
+	if (count($media) > 20)
+	{
+		$media = array_slice($media, 0, 20);
+	}
+	drupal_add_js('console.log("rendusa_media_all_page: '.count($media).'")', 'inline');
+	drupal_add_js('console.log("media", '.json_encode($media).')', 'inline');
+	$js  = 'jQuery(document).ready(function(){';
+	$js .= "	window.rendusa = new THREE.Rendusa({ target: '#app_media', sources: " . json_encode($media) . " });";
+	$js .= '});';
+	drupal_add_js($js, 'inline');
+	// load Rendusa
+	$html = '<div class="" id="app_media" style="width: 938px; height: 528px; border: 1px solid black;"></div>';
+	$html .= rendusa__resources();
+	return $html;
+}
+function rendusa__resources(){
+	$html = '';
+	$rendusapath = '/sites/all/modules/rendusa/lib/';
+	$html .= '<script src="' . $rendusapath . 'three.min.js"></script>';
+	$html .= '<script src="' . $rendusapath . 'shaders/ShaderLoader.js"></script>';
+	$html .= '<script src="' . $rendusapath . 'shaders/UIShader.js"></script>';
+	$html .= '<script src="' . $rendusapath . 'shaders/DepthHeaderExtractShader.js"></script>';
+	$html .= '<script src="' . $rendusapath . 'shaders/DepthShiftShader.js"></script>';
+	$html .= '<script src="' . $rendusapath . 'shaders/DepthBlendShader.js"></script>';
+	$html .= '<script src="' . $rendusapath . 'shaders/DepthFillShader.js"></script>';
+	$html .= '<script src="' . $rendusapath . 'shaders/DepthMergeShader.js"></script>';
+	$html .= '<script src="' . $rendusapath . 'shaders/DepthMergeAnaglyphShader.js"></script>';
+	$html .= '<script src="' . $rendusapath . 'shaders/DepthMerge2DZShader.js"></script>';
+	$html .= '<script src="' . $rendusapath . 'shaders/DepthMerge9ViewsShader.js"></script>';
+	$html .= '<script src="' . $rendusapath . 'shaders/DepthMergeInterleaver.js"></script>';
+	$html .= '<script src="' . $rendusapath . 'shaders/DepthMerge16ViewsShader.js"></script>';
+	$html .= '<script src="' . $rendusapath . 'RendusaUI.js"></script>';
+	$html .= '<script src="' . $rendusapath . 'Renderer2DZ.js"></script>';
+	$html .= '<script src="' . $rendusapath . 'Renderer2D.js"></script>';
+	$html .= '<script src="' . $rendusapath . 'headtrackr.js"></script>';
+	$html .= '<script src="' . $rendusapath . 'Rendusa.js"></script>';
+	$html .= '<script src="' . $rendusapath . 'stats.min.js"></script>';
+	$html .= '<link rel="stylesheet" href="' . $rendusapath . 'RendusaUI.css" type="text/css">';
+	return $html;
+}
+
+function rendusa__video_thumb_get($src, $tag = 'thumb', $desired_width = 192, $pos=0, $mode=0, &$width, &$height){
+	$ret = '';
+	// $width = 0;
+	// $height = 0;
+	if (!file_exists($src)) return $ret;
+	$pinfo = pathinfo($src);
+	$desired_width = $desired_width == 0 ? 192 : $desired_width;
+	$tag = $tag == '' ? 'thumb' : $tag;
+	if ($tag != ''){
+		$dest = $pinfo['dirname'] . '/' . $pinfo['filename'] . '.' . $tag . '.jpg';
+	}
+	else
+	{
+		$dest = $pinfo['dirname'] . '/' . $pinfo['filename'] . '.jpg';
+	}
+	$tmp_frame = $pinfo['dirname'] . '/' . $pinfo['filename'] . '.tmpframe.' . $pos . '.png';
+	if (!file_exists($dest)){
+		if ($mode == 0){
+			// whole frame
+			$cmd = 'ffmpeg -y -v quiet -ss ' . $pos . ' -i "' . $src . '" -t 1 -vframes 1 -f image2 "' . $tmp_frame . '"';
+		} else if ($mode == 1){
+			// left half of frame -vf crop=iw/2:1:0:0
+			$cmd = 'ffmpeg -y -v quiet -ss ' . $pos . ' -i "' . $src . '" -t 1 -vframes 1 -vf crop=iw/2:ih:0:0 -f image2 "' . $tmp_frame . '"';
+		}
+		try {
+			$rr = shell_exec($cmd);
+		} catch(Exception $e) { }
+		if (file_exists($tmp_frame) ){
+			$desired_height = 0; // will be set below using correct aspect ratio based on width
+			try {
+				/* read the source image */
+				$source_image = imagecreatefrompng($tmp_frame);
+				$size = getimagesize($tmp_frame);
+				$width = $size[0];
+				$height = $size[1];
+				/* find the "desired height" of this thumbnail, relative to the desired width  */
+				$desired_height = floor($height * ($desired_width / $width));
+				/* create a new, "virtual" image */
+				$virtual_image = imagecreatetruecolor($desired_width, $desired_height);
+				/* copy source image at a resized size */
+				imagecopyresampled($virtual_image, $source_image, 0, 0, 0, 0, $desired_width, $desired_height, $width, $height);
+				/* create the physical thumbnail image to its destination */
+				imagejpeg($virtual_image, $dest, 90);
+				unlink($tmp_frame);
+			} catch(Exception $e) { }
+			$ret = file_exists($dest) ? $dest : $ret;	
+		}
+	}
+	else
+	{
+		$ret = $dest;
+	}
+	return $ret;
+}
+// http://ffmpeg.org/ffmpeg.html
+function rendusa__video_frame_get($src, $pos = 0, $mode = 0, $dest = ''){
+	$options_default = array(
+		'width' => 0,
+		'height' => 0,
+	);
+	
+	$ret = '';
+	if (!file_exists($src)) return $ret;
+	$pinfo = pathinfo($src);
+	if ($dest === ''){
+		$tag = 'f' . $pos;
+		if ($tag != ''){
+			$dest = $pinfo['dirname'] . '/' . $pinfo['filename'] . '.' . $tag . '.png';
+		}
+		else
+		{
+			$dest = $pinfo['dirname'] . '/' . $pinfo['filename'] . '.png';
+		}
+	}
+	if (!file_exists($dest)){
+		if ($mode == 0){
+			// whole frame
+			//$cmd = 'ffmpeg -y -v quiet -ss ' . $pos . ' -i "' . $src . '" -t 1 -vframes 1 -f image2 "' . $dest . '"';
+			$cmd = 'ffmpeg -y -v quiet -ss ' . $pos . ' -i "' . $src . '" -vframes 1 -f image2 "' . $dest . '"';
+		} else if ($mode == 1){
+			// left half of frame -vf crop=iw/2:1:0:0
+			$cmd = 'ffmpeg -y -v quiet -ss ' . $pos . ' -i "' . $src . '" -t 1 -vframes 1 -vf crop=iw/2:ih:0:0 -f image2 "' . $dest . '"';
+		}
+		try {
+			$rr = shell_exec($cmd);
+		} catch(Exception $e) { }
+		$ret = file_exists($dest) ? $dest : $ret;
+	}
+	else
+	{
+		$ret = $dest;
+	}
+	return $ret;
+}
+// below courtesy of
+// http://stackoverflow.com/questions/4048863/how-to-create-a-thumbnail-of-bmp-file
+function imagecreatefrombmp($p_sFile)
+{
+    $file    =    fopen($p_sFile,"rb");
+    $read    =    fread($file,10);
+    while(!feof($file)&&($read<>""))
+        $read    .=    fread($file,1024);
+    $temp    =    unpack("H*",$read);
+    $hex    =    $temp[1];
+    $header    =    substr($hex,0,108);
+    if (substr($header,0,4)=="424d")
+    {
+        $header_parts    =    str_split($header,2);
+        $width            =    hexdec($header_parts[19].$header_parts[18]);
+        $height            =    hexdec($header_parts[23].$header_parts[22]);
+        unset($header_parts);
+    }
+    $x                =    0;
+    $y                =    1;
+    $image            =    imagecreatetruecolor($width,$height);
+    $body            =    substr($hex,108);
+    $body_size        =    (strlen($body)/2);
+    $header_size    =    ($width*$height);
+    $usePadding        =    ($body_size>($header_size*3)+4);
+    for ($i=0;$i<$body_size;$i+=3)
+    {
+        if ($x>=$width)
+        {
+            if ($usePadding)
+                $i    +=    $width%4;
+            $x    =    0;
+            $y++;
+            if ($y>$height)
+                break;
+        }
+        $i_pos    =    $i*2;
+        $r        =    hexdec($body[$i_pos+4].$body[$i_pos+5]);
+        $g        =    hexdec($body[$i_pos+2].$body[$i_pos+3]);
+        $b        =    hexdec($body[$i_pos].$body[$i_pos+1]);
+        $color    =    imagecolorallocate($image,$r,$g,$b);
+        imagesetpixel($image,$x,$height-$y,$color);
+        $x++;
+    }
+    unset($body);
+    return $image;
+}
+function rendusa__image_thumb_get($src, $tag = 'thumb', $desired_width = 192, $mode = 0){
+	$ret = '';
+	if (!file_exists($src)) return $ret;
+	$pinfo = pathinfo($src);
+	if ($tag != ''){
+		$dest = $pinfo['dirname'] . '/' . $pinfo['filename'] . '.' . $tag . '.jpg';
+	}
+	else
+	{
+		$dest = $pinfo['dirname'] . '/' . $pinfo['filename'] . '.jpg';
+	}
+	if (!file_exists($dest)){
+		// create thumb
+		$desired_height = 0; // will be set below using correct aspect ratio based on width
+		try {
+			/* read the source image */
+			$source_image = false;
+			if (strrpos(strtolower($src), '.png') === strlen($src) - 4){
+				$source_image = @imagecreatefrompng($src);
+			} else if (strrpos(strtolower($src), '.bmp') === strlen($src) - 4){
+				$source_image = @imagecreatefrombmp($src);
+			} else if (strrpos(strtolower($src), '.jpg') === strlen($src) - 4 || strrpos(strtolower($src), '.jpeg') === strlen($src) - 5){
+				$source_image = @imagecreatefromjpeg($src);
+			}
+			if ($source_image){
+				$width = imagesx($source_image);
+				$height = imagesy($source_image);
+				/* find the "desired height" of this thumbnail, relative to the desired width  */
+				$desired_height = floor($height * ($desired_width / $width));
+				/* create a new, "virtual" image */
+				$virtual_image = imagecreatetruecolor($desired_width, $desired_height);
+				/* copy source image at a resized size */
+				if ($mode == 1){
+					imagecopyresampled($virtual_image, $source_image, 0, 0, 0, 0, $desired_width, $desired_height, $width / 2, $height);
+				} else {
+					imagecopyresampled($virtual_image, $source_image, 0, 0, 0, 0, $desired_width, $desired_height, $width, $height);
+				}
+				
+				/* create the physical thumbnail image to its destination */
+				imagejpeg($virtual_image, $dest, 90);
+			}
+		} catch(Exception $e) { }		
+		$ret = file_exists($dest) ? $dest : $ret;
+	}
+	else
+	{
+		$ret = $dest;
+	}
+	return $ret;
+}
+function rendusa__ffprobe_info_get($src){
+	// ffprobe -v quiet -print_format json -show_format "fallout.mp4"
+	$ret = null;
+	if (!file_exists($src)) return $ret;
+	$cmd = 'ffprobe -v quiet -print_format json -show_format "' . $src . '"';
+	try {
+		$ret = shell_exec($cmd);
+		$ret = json_decode($ret);
+	} catch(Exception $e) { }
+	return $ret;
+}
+function rendusa_init(){
+	global $rendusa_formats_3d;
+	rendusa__init_db();
+	rendusa__update_steam_ids();
+	$rendusa_formats_3d = array(
+		'2DZ',					// preferred input as it's easier to convert to the other formats
+		'2D',					// near impossible to convert to good 3D
+		'Anaglyph Red Cyan',	// near impossible to convert to other 3D formats and 2D
+		'Stereo Side By Side',	// easy conversion to other 2 view 3D modes and 2D
+		// 'Stereo Over Under',	// easy conversion to other 2 view 3D modes and 2D
+		// // Most other formats have issues with being compressed. blending the views together (unless lossless like png and bmp)
+		// 'Stereo Checkerboard',	// possible conversion to other 2 view 3D modes and 2D
+		// 'Stereo Interleaved',	// possible conversion to other 2 view 3D modes and 2D
+		// 'Other',
+	);
+}
+function rendusa_menu() {
+	// rendusa__hash_exists_check_page
+	
+	$items['rendusa/media/upload'] = array(
+		'title' => '',
+		'page callback' => 'rendusa__media_upload_page',
+		'access arguments' => array('access content'),
+		'type' => MENU_NORMAL_ITEM
+	);
+	$items['rendusa/media/all'] = array(
+		'title' => '',
+		'page callback' => 'rendusa__media_all_page',
+		'access arguments' => array('access content'),
+		'type' => MENU_NORMAL_ITEM
+	);
+	return $items;
+}

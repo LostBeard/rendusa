@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!--colormodel: rgb=0, bgr=1-->
+<root>
+  <interleavers>
+    <interleaver name="Exceptional3d9x2K" description="50 inch 9-view HD" views="9" resolution="1920;1080" pixel_size="0.2734375;0.26481481" colormodel="0" />
+    <interleaver name="iFNStudio9x2K" description="iFN test 9-view HD" views="9" resolution="1920;1080" pixel_size="0.2734375;0.26481481" colormodel="0" />
+    <interleaver name="Exceptional3d5x4K" description="24 inch 5-view 4K" views="5" resolution="3840;2160" pixel_size="0.2734375;0.26481481" colormodel="0" />
+    <interleaver name="Exceptional3d8x4K" description="28 inch 8-view 4K" views="8" resolution="3840;2160" pixel_size="0.2734375;0.26481481" colormodel="0" />
+    <interleaver name="iFNStudio15x4K" description="iFN test 15-view 4K" views="15" resolution="3840;2160" pixel_size="0.2734375;0.26481481" colormodel="0" />
+  </interleavers>
+
+
+  <layouts>
+    <!--position: 0:0 == left:top-->
+    <!--index is only for information-->
+    
+    <layout  name="2D" ext="">
+      <!--views=1-->
+      <view index="0" position="0;0" />
+    </layout>
+    <layout name="Stereo" ext="sbs">
+      <!--views=2-->
+      <view index="0" position="1;0" />
+      <view index="1" position="0;0" />
+    </layout>
+
+    <layout name="5-3x2" ext="5-3x2">
+      <!--views=5-->
+      <view index="0" position="0;1" />
+      <view index="1" position="1;1" />
+      <view index="2" position="2;1" />
+      <view index="3" position="0;0" />
+      <view index="4" position="1;0" />
+    </layout>
+
+    <layout name="5-5x1" ext="5x1">
+      <!--views=5-->
+      <view index="0" position="0;0" />
+      <view index="1" position="1;0" />
+      <view index="2" position="2;0" />
+      <view index="3" position="3;0" />
+      <view index="4" position="4;0" />
+    </layout>
+    
+    <!--views=15-->
+    <layout name="15-15x1" ext="15x1">   
+      <view index="0" position="0;0" />
+      <view index="1" position="1;0" />
+      <view index="2" position="2;0" />
+      <view index="3" position="3;0" />
+      <view index="4" position="4;0" />
+      <view index="5" position="5;0" />
+      <view index="6" position="6;0" />
+      <view index="7" position="7;0" />      
+      <view index="8" position="8;0" />      
+      <view index="9" position="9;0" />      
+      <view index="10" position="10;0" />      
+      <view index="11" position="11;0" />      
+      <view index="12" position="12;0" />      
+      <view index="13" position="13;0" />      
+      <view index="14" position="14;0" />                  
+    </layout>    
+        
+    <layout name="5-1x5" ext="1x5">
+      <!--views=5-->
+      <view index="0" position="0;0" />
+      <view index="1" position="0;1" />
+      <view index="2" position="0;2" />
+      <view index="3" position="0;3" />
+      <view index="4" position="0;4" />
+    </layout>
+      
+    <layout name="7-3x3" ext="7-3x3">
+      <!--views=7-->
+      <view index="0" position="0;2" />
+      <view index="1" position="1;2" />
+      <view index="2" position="2;2" />
+      <view index="3" position="0;1" />
+      <view index="4" position="1;1" />
+      <view index="5" position="2;1" />
+      <view index="6" position="0;0" />
+    </layout>
+
+    <layout name="8-3x3" ext="8-3x3">
+      <!--views=8-->
+      <view index="0" position="0;2" />
+      <view index="1" position="1;2" />
+      <view index="2" position="2;2" />
+      <view index="3" position="0;1" />
+      <view index="4" position="1;1" />
+      <view index="5" position="2;1" />
+      <view index="6" position="0;0" />
+      <view index="7" position="1;0" />
+    </layout>
+    
+    <layout name="8-4x2" ext="8-4x2">
+      <!--views=8-->
+      <view index="0" position="0;0" />
+      <view index="1" position="1;0" />
+      <view index="2" position="2;0" />
+      <view index="3" position="3;0" />
+      <view index="4" position="0;1" />
+      <view index="5" position="1;1" />
+      <view index="6" position="2;1" />
+      <view index="7" position="3;1" />
+    </layout>
+    
+    <layout name="8-2x4" ext="8-2x4">
+      <!--views=8-->
+      <view index="0" position="0;0" />
+      <view index="1" position="1;0" />
+      <view index="2" position="0;1" />
+      <view index="3" position="1;1" />
+      <view index="4" position="0;2" />
+      <view index="5" position="1;2" />
+      <view index="6" position="0;3" />
+      <view index="7" position="1;3" />
+    </layout>
+
+    <layout name="9-3x3" ext="3x3">
+      <!--views=9-->
+      <view index="0" position="0;2" />
+      <view index="1" position="1;2" />
+      <view index="2" position="2;2" />
+      <view index="3" position="0;1" />
+      <view index="4" position="1;1" />
+      <view index="5" position="2;1" />
+      <view index="6" position="0;0" />
+      <view index="7" position="1;0" />
+      <view index="8" position="2;0" />
+    </layout>
+
+
+    <!-- Important: You can not change field "layoutType" - it's for internal usage -->
+
+    <special_layout name="Spherical" ext="sph" layoutType="spherical"/>
+    <special_layout name="ColorDepth" ext="2dz" layoutType="2d+z"/>
+    <special_layout name="ColorDepth+Declipse" ext="s3d" layoutType="2d+z+d"/>
+
+
+  </layouts>
+
+    
+    
+
+  <view_meta>
+    <views value="1" perviewseparation="0" />
+    <views value="2" perviewseparation="1.0" />
+    <views value="5" perviewseparation="0.5" />
+    <views value="6" perviewseparation="0.5" />
+    <views value="7" perviewseparation="0.5" />
+    <views value="8" perviewseparation="0.5" />
+    <views value="9" perviewseparation="0.5" />
+  </view_meta>
+
+  
+  <view_resolutions>
+    <resolution value="640;360"/>
+    <resolution value="960;540"/>
+    <resolution value="1280;720"/>
+    <resolution value="1920;1080"/>
+    <resolution value="3840;2160"/>
+    <resolution value="4096;2048"/>
+    <resolution value="4096;4096"/>
+    <resolution value="6000;1500"/>
+    <resolution value="7680;3240"/>
+  </view_resolutions>
+
+  
+
+
+</root>

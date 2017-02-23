@@ -1,0 +1,73 @@
+@CHARSET "ISO-8859-1";
+
+/** Buttons **/
+.media_mana_button {
+	background-repeat: no-repeat;
+    background-position: center; 
+	background-size: 100% 100%;
+}
+.media_mana_prev {
+	background-image: url('images/Actions-media-seek-backward-icon.png');
+}
+.media_mana_play {
+	background-image: url('images/Actions-media-playback-start-icon.png');
+}
+.media_mana_next {
+	background-image: url('images/Actions-media-seek-forward-icon.png');
+}
+.media_mana_repeat {
+	background-image: url('images/loop_white.png');
+}
+.media_mana_fs {
+	background-image: url('images/expand_white.png');
+}
+.media_mana_drop {
+	background-image: url('images/menu_light.png');
+}
+.media_mana_3d {
+	width: 54px !important;
+	background-image: url('images/3d_small.png');
+}
+/** Menu Item Tags **/
+.media_mana_menu_item_video {
+	background-size: 100% 100%;
+	background-image: url('images/reel_dark_24.png');
+	position: absolute;
+	top: 4px;
+	right: 4px;
+	z-index: 10px;
+	opacity: 0.6;
+	background-color: white;
+	width: 24px;
+	height: 24px;
+}
+.media_mana_menu_item_image {
+	background-size: 100% 100%;
+	background-image: url('images/image_dark_24.png');
+	position: absolute;
+	top: 4px;
+	right: 4px;
+	z-index: 10px;
+	opacity: 0.6;
+	background-color: white;
+	width: 24px;
+	height: 24px;
+}
+.media_mana_menu_item_2dz {
+	background-size: 100% 100%;
+	background-image: url('images/3d_small.png');
+	position: absolute;
+	top: 4px;
+	left: 4px;
+	z-index: 10px;
+	opacity: 0.8;
+	width: 35px;
+	height: 22px;
+}
+.media_mana {
+ 
+}
+
+.media_mana_loading_img {
+	background-image: url('images/loading_alt5.gif');
+}

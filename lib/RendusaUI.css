@@ -1,0 +1,263 @@
+
+.rendusa_ui_div {
+    position: absolute; 
+    top: 0; 
+    bottom: 0; 
+    left: 0; 
+    right: 0; 
+    margin: 0; 
+    border: 0; 
+    padding: 0; 
+    z-index: -99;
+    color: white;
+}
+
+
+
+.rendusa_ui_help_panel {
+    background-color: rgba(16, 16, 16, 0.8); 
+    width: 400px;
+    left: 50%;
+    margin-left: -200px;
+    position: absolute; 
+    top: 100px;
+    color: white;
+    display: none;
+    padding: 10px;
+    height: auto;
+}
+.rendusa_ui_help_table {
+    width: 100%;
+    height: auto;
+    font-size: 14px;
+}
+.rendusa_ui_help_table td > div {
+    color: white;
+}
+.rendusa_ui_help_table td:nth-child(1) {
+    min-width: 20px;
+    height: auto;
+}
+.rendusa_ui_help_table td:nth-child(1) > div {
+    float: right;
+}
+
+
+.rendusa_ui_info_panel {
+    background-color: rgba(16, 16, 16, 0.8); 
+    height: auto; 
+    position: absolute; 
+    left: 0; 
+    right: 0; 
+    top: 0;
+    color: white;
+}
+
+.rendusa_ui_info_table {
+    width: auto;
+    height: auto;
+    font-size: 16px;
+    margin: 8px;
+}
+.rendusa_ui_info_table td > div {
+    color: white;
+}
+.rendusa_ui_info_table td:nth-child(1) {
+    min-width: 50px;
+    white-space: nowrap;
+    height: auto;
+    font-weight: bold;
+}
+.rendusa_ui_info_table td:nth-child(1) > div {
+    float: right;
+}
+
+.rendusa_ui_control_panel {
+    background-color: rgba(16, 16, 16, 0.8); 
+    /* height: 50px;  */
+    position: absolute; 
+    left: 0; 
+    right: 0; 
+    bottom: 0;
+    text-align: center; 
+}
+
+.rendusa_ui_controls {
+    width: 100%;
+    /* min-height: 32px; */
+}
+
+.rendusa_ui_controls_center {
+    min-height: 32px;
+    min-width: 32px;
+}
+.rendusa_ui_controls_center > div {
+    display: inline-block;
+    width: 32px; 
+    margin: 2px;
+}
+
+.rendusa_ui_controls_left {
+    text-align: center; 
+    position: absolute; 
+    min-width: 32px;
+    min-height: 32px;
+    left: 0; 
+    bottom: 0;
+}
+.rendusa_ui_controls_left > div {
+    display: inline-block;
+    width: 32px; 
+    height: 32px;
+    margin: 2px;
+}
+
+.rendusa_ui_controls_right {
+    text-align: center; 
+    position: absolute; 
+    min-width: 32px; 
+    min-height: 32px;
+    right: 0; 
+    bottom: 0;
+}
+.rendusa_ui_controls_right > div {
+    display: inline-block;
+    width: 32px; 
+    height: 32px;
+    margin: 2px;
+}
+
+
+
+.rendusa_ui_progress_bar {
+    position: relative;
+    height: 24px; 
+    text-align: center; 
+    background-color: rgba(55, 55, 55, 1); 
+    width: 100%;
+}
+
+.rendusa_ui_progress_bar_inner {
+    width: 100%; 
+    background-color: darkslategrey; 
+    position: absolute; 
+    left: 0; 
+    top: 1px; 
+    bottom: 3px;
+}
+.rendusa_ui_progress_bar_inner_2 {
+    width: 100%; 
+    background-color: darkolivegreen; 
+    position: absolute; 
+    left: 0; 
+    height: 2px;
+    bottom: 1px;
+}
+.rendusa_ui_progress_bar_inner_vbar {
+    width: 2px; 
+    margin-left: -1px;
+    background-color: darkseagreen; 
+    position: absolute; 
+    left: 0; 
+    bottom: 0;
+    top: 0;
+    z-index: 100;
+}
+
+.rendusa_ui_progress_current_time {
+
+}
+
+.rendusa_ui_button, .rendusa_ui_checkbox {
+    background-repeat: no-repeat;
+    background-position: center center;
+    background-size: 100% 100%;
+    /* background-color: black; */
+    display: inline-block;
+    width: 32px; 
+    height: 32px;
+}
+
+
+
+
+.rendusa_ui_controls * {
+    vertical-align: bottom;
+}
+
+
+.rendusa_ui_prev_button {
+    background-image: url(themes/oxygen/48x48/actions/go-first-view_sat_up.png);
+}
+.rendusa_ui_prev_button.rendusa_ui_mousedown {
+    background-image: url(themes/oxygen/48x48/actions/go-first-view.png);
+}
+
+.rendusa_ui_play_checkbox {
+    background-image: url(themes/oxygen/48x48/actions/go-next-view_sat_down.png);
+}
+.rendusa_ui_play_checkbox[checked] {
+    background-image: url(themes/oxygen/48x48/actions/go-next-view_sat_up.png);
+}
+.rendusa_ui_play_checkbox.rendusa_ui_mousedown {
+    background-image: url(themes/oxygen/48x48/actions/go-next-view.png);
+}
+
+.rendusa_ui_next_button {
+    background-image: url(themes/oxygen/48x48/actions/go-last-view_sat_up.png);
+}
+.rendusa_ui_next_button.rendusa_ui_mousedown {
+    background-image: url(themes/oxygen/48x48/actions/go-last-view.png);
+}
+
+.rendusa_ui_controls_left > .rendusa_ui_format_3d_label {
+    font-size: 18px;
+    margin-top: 3px;
+    margin-left: 3px;
+    width: auto;
+    height: auto;
+    vertical-align: top;
+}
+
+.rendusa_ui_progress_label_container {
+    margin: 1px;
+    width: auto;
+    height: auto;
+    display: inline-block;
+    z-index: 10;
+}
+.rendusa_ui_progress_label {
+    font-size: 18px;
+    display: block;
+    width: auto;
+    height: auto;
+    vertical-align: top;
+}
+
+.rendusa_ui_expand_button {
+    background-image: url(themes/oxygen/48x48/actions/transform-move.png);
+}
+
+.rendusa_ui_help_button {
+    background-image: url(themes/oxygen/48x48/actions/help-about.png);
+}
+
+.rendusa_ui_format_3d_button {
+    background-image: url(themes/basic/images/3D-icon.png);
+}
+
+.rendusa_ui_mute_checkbox {
+    background-image: url(themes/nuovext/48x48/apps/kmixdocked.png);
+}
+.rendusa_ui_mute_checkbox[checked] {
+    background-image: url(themes/nuovext/48x48/apps/kmixdocked_error.png);
+}
+
+.rendusa_ui_perspective_checkbox {
+    background-image: url(themes/oxygen/48x48/status/task-delegate.png);
+    opacity: 0.4;
+}
+.rendusa_ui_perspective_checkbox[checked] {
+    background-image: url(themes/oxygen/48x48/status/task-delegate.png);
+    opacity: 1.0;
+}

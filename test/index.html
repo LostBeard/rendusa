@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Rendusa Dev</title>
+	<!-- jQuery -->
+	<script src="lib/jquery-1.11.2.min.js"></script>
+	
+	<!-- THREE JS -->
+	<script src="lib/three.min.js"></script>
+
+	<!-- Rendusa and Renderer(s) (requires jQuery and THREE.js) -->
+	<script src="lib/shaders/ShaderLoader.js"></script>
+	<script src="lib/shaders/UIShader.js"></script>
+	<script src="lib/shaders/DepthHeaderExtractShader.js"></script>
+	<script src="lib/shaders/DepthShiftShader.js"></script>
+	<script src="lib/shaders/DepthBlendShader.js"></script>
+	<script src="lib/shaders/DepthFillShader.js"></script>
+	<script src="lib/shaders/DepthMergeShader.js"></script>
+	<script src="lib/shaders/DepthMerge2DZShader.js"></script>
+	<script src="lib/shaders/DepthMerge9ViewsShader.js"></script>
+	<script src="lib/shaders/DepthMerge16ViewsShader.js"></script>
+	<script src="lib/Renderer2DZ.js"></script>
+	<script src="lib/Renderer2D.js"></script>
+	<script src="lib/RendusaUI.js"></script>
+	<script src="lib/Rendusa.js"></script>
+	<link rel="stylesheet" href="lib/RendusaUI.css" type="text/css">
+
+	<!-- DEBUG THREE Stats -->
+	<script src="lib/stats.min.js"></script>
+	
+	<!-- HeadTrackr -->
+	<script src="lib/headtrackr.js"></script>	
+	
+	<!-- Page files -->
+	<link rel="stylesheet" href="index.css" type="text/css">
+	<script src="index.js"></script>
+</head>
+<body>
+	<div id="main" style=""></div>
+	<!--
+	<div id="headtrackr_div" style="display:none">
+		<canvas id="inputCanvas" width="320" height="240" style="display:none"></canvas>
+		<video id="inputVideo" autoplay loop></video>
+		<script type="text/javascript">
+		  var videoInput = document.getElementById('inputVideo');
+		  var canvasInput = document.getElementById('inputCanvas');
+		  var htracker = new headtrackr.Tracker({ui: false});
+		  htracker.init(videoInput, canvasInput);
+		  htracker.start();
+		</script>	
+	</div>
+	-->
+</body>
+</html>
