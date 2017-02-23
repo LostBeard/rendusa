@@ -1,8 +1,6 @@
 ![Logo of the project](http://rendusa.com/sites/rendusa/files/rendusa.png)
 
-# Name of the project
-> Rendusa
-
+# Rendusa
 Open Source 3D Media Player
 
 See in action at
