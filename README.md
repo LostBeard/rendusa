@@ -69,9 +69,4 @@ I am not responsible for any negative affects of using this software.
 
 Rendusa is developed in my spare time which I have little of due to a 1 and a half year old daughter and being the only programmer in a 3D software company. Donating to the Rendusa development team will allow me to free up additional time to improve Rendusa and add new features. I can not guarantee that all requests will be followed, but I am open for discussion on making Rendusa the most useful and adaptable 3D video player for the web. Any donation amount helps.
 
-<form action="https://www.paypal.com/cgi-bin/webscr" method="post" target="_top">
-<input type="hidden" name="cmd" value="_s-xclick">
-<input type="hidden" name="hosted_button_id" value="6WWLQN2X54PDN">
-<input type="image" src="https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif" border="0" name="submit" alt="PayPal - The safer, easier way to pay online!">
-<img alt="" border="0" src="https://www.paypalobjects.com/en_US/i/scr/pixel.gif" width="1" height="1">
-</form>
+You can find the Donate button on Rendusa.com here http://rendusa.com/node/2
