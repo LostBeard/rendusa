@@ -37,20 +37,22 @@ way.
 
 Input
 * 2D+Z
-* 2D                    (coming soon, low priority)
-* Anaglyph              (coming soon)
-* Stereo Side by Side   (coming soon)
-* Stereo Over Under     (coming soon)
+* 2D                    - coming soon
+* Anaglyph              - coming soon
+* Stereo Side by Side   - coming soon
+* Stereo Over Under     - coming soon
 
 Output 
 (Some output formats may not be possible with given input)
 * 2D
-* 2D+Z
-* Anaglyph              (currently Red Cyan, more to come)
-* Exceptional 9 View    (a lenticular auto-stereoscopic display)
+* Anaglyph              - Red Cyan, more to come
+* 2D+Z                  - used by many glasses free autostereoscopic displays
+* Exceptional 9 View    - a galsses free lenticular only auto-stereoscopic display
 * Stereo Side by Side
-* Stereo Over Under     (coming soon)
-* Checkerboard          (coming soon)
+* Stereo Over Under     - coming soon
+* Checkerboard          - coming soon
+
+Ask us to support your 3D format!
 
 ## Contributing
 
