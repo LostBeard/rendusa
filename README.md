@@ -8,12 +8,11 @@ http://rendusa.com
 
 ## Installing / Getting started
 
-Rendusa is primarily designed to be a part of Drupal using it's own Drupal 
-module, but this is not required. The module is designed for Drupal 7. The
-easiest way is to install Rendusa like any other Drupal module into a 
-working Drupal 7 installation. FFmpeg is required on your Drupal server. 
-This may be changed in the future but currently allows useful features.
-jQuery Update module for Drupal is also a current requirement of Rendusa.
+Rendusa is primarily designed as a module for Drupal 7, but that is not 
+required. The easiest way to get started is to install Rendusa into a 
+working Drupal 7 installation. FFmpeg is required on your Drupal server.
+ This may be changed in the future but currently allows useful features. 
+ jQuery Update module for Drupal is also required.
 
 To upload goto yoursite.com/?q=rendusa/media/upload
 To view goto   yoursite.com/?q=rendusa/media/all
