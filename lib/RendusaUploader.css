@@ -2,12 +2,21 @@
 
 #rendusa_upload_container {
     width: 938px;
+    background-color: white;
+    color: black;
 }
+
 
 .rendusa_uploader {
     position: relative;
 }
-
+.rendusa_uploader table,
+.rendusa_uploader table tr,
+.rendusa_uploader table td,
+.rendusa_uploader table tbody
+{
+    background-color: transparent;
+}
 /*
 *:focus {
     border: 1px solid red;
@@ -262,15 +271,21 @@
     margin-bottom: 4px;
 }
 
-.rendusa_upload_item_info > tbody > tr > td {
+
+
+.rendusa_upload_item_info > tbody > tr > td, 
+.rendusa_upload_item_info th 
+{
     text-align: left;
     border: none;
+    padding: 2px;
 }
 
 .rendusa_upload_item_info > tbody > tr > td:first-child {
     text-align: right;
     font-weight: bold;
     width: 75px;
+    white-space: nowrap;
 }
 
 

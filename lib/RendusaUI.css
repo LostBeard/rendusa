@@ -10,10 +10,30 @@
     padding: 0; 
     z-index: -99;
     color: white;
+    line-height: normal;
+}
+.rendusa_ui_div table {
+    background: transparent;
 }
 
 
-
+.rendusa_ui_cover {
+    position: absolute; 
+    top: 50%; 
+    left: 50%; 
+    margin-left: -50px;
+    margin-top: -50px;
+    width: 100px;
+    height: 100px;
+    background-repeat: no-repeat;
+    background-position: center center;
+    background-image: url(rendusa.png);
+    background-size: 100% 100%;
+    display: block;
+}
+.rendusa_target.rendusa_source_loaded .rendusa_ui_cover {
+    display: none;
+}
 .rendusa_ui_help_panel {
     background-color: rgba(16, 16, 16, 0.8); 
     width: 400px;
@@ -59,6 +79,16 @@
     font-size: 16px;
     margin: 8px;
 }
+.rendusa_ui_info_table tbody {
+    margin: 0;
+    border: 0;
+    padding: 0;
+}
+.rendusa_ui_info_table td {
+    padding: 0.1em 0.5em 0.1em 0.5em;
+}
+
+
 .rendusa_ui_info_table td > div {
     color: white;
 }

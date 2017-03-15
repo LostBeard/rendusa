@@ -47,7 +47,7 @@ Output
 * 2D
 * Anaglyph              - Red Cyan, more to come
 * 2D+Z                  - used by many glasses free autostereoscopic displays
-* Exceptional 9 View    - a galsses free lenticular only auto-stereoscopic display
+* Exceptional 9 View    - a glasses free lenticular only auto-stereoscopic display
 * Stereo Side by Side
 * Stereo Over Under     - coming soon
 * Checkerboard          - coming soon

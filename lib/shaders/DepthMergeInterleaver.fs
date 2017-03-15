@@ -1,7 +1,5 @@
 uniform sampler2D viewTexArray[9];
 uniform sampler2D interleaverTex;
-uniform int outFormat;
-uniform int last_view;
 uniform vec2 pattern_size;
 uniform vec2 interleaverTex_size;
 
