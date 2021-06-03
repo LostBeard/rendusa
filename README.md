@@ -3,7 +3,8 @@
 Open Source 3D Media Player
 
 See in action at
-https://www.3dgamemarket.net/rendusa/media/random
+
+* https://www.3dgamemarket.net/rendusa/media/random
 
 ## Installing / Getting started
 
