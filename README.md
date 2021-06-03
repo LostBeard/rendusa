@@ -1,10 +1,9 @@
-![Logo of the project](http://rendusa.com/sites/rendusa/files/rendusa.png)
 
 # Rendusa
 Open Source 3D Media Player
 
 See in action at
-http://rendusa.com
+https://www.3dgamemarket.net/rendusa/media/random
 
 ## Installing / Getting started
 
@@ -37,27 +36,13 @@ way.
 
 Input
 * 2D+Z
-* 2D                    - coming soon
-* Anaglyph              - coming soon
-* Stereo Side by Side   - coming soon
-* Stereo Over Under     - coming soon
 
 Output 
-(Some output formats may not be possible with given input)
 * 2D
-* Anaglyph              - Red Cyan, more to come
+* Anaglyph              - Red Cyan, Green Magenta
 * 2D+Z                  - used by many glasses free autostereoscopic displays
-* Exceptional 9 View    - a glasses free lenticular only auto-stereoscopic display
-* Stereo Side by Side
-* Stereo Over Under     - coming soon
-* Checkerboard          - coming soon
-
-Ask us to support your 3D format!
-
-## Contributing
-
-Contributions to rendusa are welcome. Contact me via GitHub or on 
-http://rendusa.com
+* Side by Side          - common format
+* Over Under            - common format
 
 ## Licensing
 
@@ -65,8 +50,3 @@ The code in this project is licensed under MIT license. My intention is to
 make this code available to any and all free of charge. No strings attached. 
 I am not responsible for any negative affects of using this software.
 
-## Donate
-
-Rendusa is developed in my spare time which I have little of due to a 1 and a half year old daughter and being the only programmer in a 3D software company. Donating to the Rendusa development team will allow me to free up additional time to improve Rendusa and add new features. I can not guarantee that all requests will be followed, but I am open for discussion on making Rendusa the most useful and adaptable 3D video player for the web. Any donation amount helps.
-
-You can find the Donate button on Rendusa.com here http://rendusa.com/node/2
