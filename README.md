@@ -2,10 +2,6 @@
 # Rendusa
 Open Source 3D Media Player
 
-See in action at
-
-* https://www.3dgamemarket.net/rendusa/media/random
-
 ## Installing / Getting started
 
 Rendusa is primarily designed as a module for Drupal 7, but that is not 
